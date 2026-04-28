@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INTENT-IR — Verifiable Agent Execution</title>
+  <meta name="description" content="INTENT-IR is an assembly-style communication layer for AI agents: compile messages into verifiable, replayable instruction packets." />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111827;
+      --panel2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: rgba(255,255,255,.10);
+      --green: #34d399;
+      --red: #fb7185;
+      --blue: #60a5fa;
+      --yellow: #facc15;
+      --code: #020617;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 0%, rgba(96,165,250,.18), transparent 35%), var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    a { color: var(--blue); }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 56px 24px 96px; }
+    .hero { padding: 64px 0 44px; border-bottom: 1px solid var(--line); }
+    .eyebrow { color: var(--green); font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { font-size: clamp(42px, 7vw, 78px); line-height: .98; letter-spacing: -0.055em; margin: 18px 0 22px; }
+    .subtitle { font-size: 21px; color: var(--muted); max-width: 760px; }
+    .punch { margin-top: 28px; padding: 18px 20px; border: 1px solid rgba(52,211,153,.35); background: rgba(52,211,153,.08); border-radius: 14px; font-size: 18px; }
+    section { padding: 48px 0; border-bottom: 1px solid var(--line); }
+    h2 { font-size: 32px; letter-spacing: -.03em; margin: 0 0 18px; }
+    h3 { margin-top: 28px; }
+    p { color: #cbd5e1; font-size: 17px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: rgba(17,24,39,.72); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+    .card strong { color: #fff; }
+    pre { background: var(--code); border: 1px solid var(--line); border-radius: 16px; padding: 20px; overflow-x: auto; color: #dbeafe; font-size: 14px; line-height: 1.65; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .flow { font-size: 16px; color: #dbeafe; }
+    .ok { color: var(--green); font-weight: 700; }
+    .bad { color: var(--red); font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; overflow: hidden; border-radius: 14px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: rgba(255,255,255,.06); color: #fff; }
+    td { color: #cbd5e1; background: rgba(17,24,39,.45); }
+    .callout { border-left: 4px solid var(--yellow); padding: 14px 18px; background: rgba(250,204,21,.08); border-radius: 0 12px 12px 0; margin: 24px 0; }
+    .footer { color: var(--muted); padding-top: 34px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <div class="eyebrow">AI Agent Infrastructure · Compiler Systems · Policy Enforcement</div>
+      <h1>INTENT-IR: Verifiable Execution for AI Agents</h1>
+      <p class="subtitle">An assembly-style communication layer where agents send instruction packets that can be disassembled, verified, rejected, executed, traced, and replayed.</p>
+      <div class="punch"><strong>Core idea:</strong> agents should not blindly execute requests. They should execute verified programs.</div>
+    </header>
+
+    <section>
+      <h2>The problem</h2>
+      <p>Most agent systems treat tool calls as trusted requests. An agent emits JSON, a runtime invokes a tool, and logs are inspected after the fact.</p>
+      <p>That model is convenient, but it is weak for safety and debugging. Before execution, the receiver often cannot cleanly answer: what exactly will run, is it allowed, what budget does it claim, and can the result be replayed?</p>
+      <div class="grid">
+        <div class="card"><strong>Opaque</strong><br />Tool calls are readable, but not a stable execution format.</div>
+        <div class="card"><strong>Hard to verify</strong><br />Policy is usually scattered across runtime code.</div>
+        <div class="card"><strong>Hard to replay</strong><br />Logs are not the same as deterministic execution traces.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The model</h2>
+      <pre class="flow"><code>Agent Message JSON
+    ↓ compile-message
+IntentASM (.intentasm)
+    ↓ asm
+IntentBin (.intentbin)
+    ↓ recv
+Disassemble + Verify(policy)
+    ↓
+Execute OR Reject
+    ↓
+Trace → Replay</code></pre>
+      <p>INTENT-IR treats agent communication like a compiler/runtime pipeline. A high-level agent message is lowered into a small assembly-like program, assembled into a binary packet, verified by the receiving agent, and only then executed.</p>
+    </section>
+
+    <section>
+      <h2>IntentASM example</h2>
+      <pre><code>AGENT planner
+AGENT worker
+
+TASK t1 TYPE "repo_scan"
+BUDGET t1 MEMORY 512MB TIME 30000MS TOKENS 4096
+
+PAYLOAD p1 JSON {"repo": ".", "include": ["*.md", "*.py"]}
+
+SEND planner worker CHANNEL "task" PAYLOAD p1
+CALL worker TOOL "repo.scan" ARGS p1
+
+ASSERT LAST.status == "ok"
+COMMIT t1 ARTIFACT "repo_summary.json"
+HALT</code></pre>
+      <p>This is the key difference: the sender is not just asking the receiver to do something. It is sending a small, inspectable program.</p>
+    </section>
+
+    <section>
+      <h2>Killer demo: safe vs unsafe packets</h2>
+      <p>The demo shows two packets sent to the same worker agent. One is safe and executes. One attempts an unsafe tool call and is rejected before execution.</p>
+      <pre><code>$ make demo-safety
+
+SAFE PACKET:
+[policy] loaded policies/worker.policy.json
+[verify] ✔ passed
+[execute] CALL repo.scan
+[commit] repo_scan.report
+[trace] wrote traces/safe_repo_scan.intenttrace.jsonl
+[replay] ✔ success
+
+UNSAFE PACKET:
+[policy] loaded policies/worker.policy.json
+[verify] ✖ failed
+[reject] tool "shell.exec" not allowed
+[execute] skipped
+[trace] wrote traces/unsafe_shell.intenttrace.jsonl
+[replay] ✔ confirms rejection</code></pre>
+      <div class="callout"><strong>The important property:</strong> the unsafe packet does not run. The receiver rejects it at the verification gate.</div>
+    </section>
+
+    <section>
+      <h2>Policy enforcement</h2>
+      <p>Each receiver agent can enforce its own policy. The worker may allow repository scanning and artifact writing, while denying shell execution, network calls, deletion, or secrets access.</p>
+      <pre><code>{
+  "allowed_tools": ["repo.scan", "artifact.write", "trace.emit"],
+  "denied_tools": ["shell.exec", "file.delete", "network.post", "secrets.read"],
+  "max_budget": {
+    "memory_mb": 512,
+    "tokens": 5000,
+    "wall_ms": 5000
+  },
+  "require_asserts": true,
+  "require_commit": true
+}</code></pre>
+      <p>The verifier checks the packet structure, tool permissions, resource budget, and required invariants before the runtime executes anything.</p>
+    </section>
+
+    <section>
+      <h2>Why not just APIs?</h2>
+      <table>
+        <thead><tr><th>Plain tool/API calls</th><th>INTENT-IR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="bad">Opaque execution</span></td><td><span class="ok">Disassemblable instruction packet</span></td></tr>
+          <tr><td><span class="bad">Policy hidden in runtime code</span></td><td><span class="ok">Explicit receiver policy</span></td></tr>
+          <tr><td><span class="bad">Debug after failure</span></td><td><span class="ok">Verify before execution</span></td></tr>
+          <tr><td><span class="bad">Logs are ad hoc</span></td><td><span class="ok">Trace and replay are first-class</span></td></tr>
+          <tr><td><span class="bad">Receiver trusts sender intent</span></td><td><span class="ok">Receiver enforces its own constraints</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Systems analogy</h2>
+      <p>The idea is closer to eBPF or WASM than to normal tool-calling. eBPF programs are verified before being loaded into the kernel. WASM modules execute inside a constrained runtime. INTENT-IR applies the same instinct to agent communication: instruction packets should be inspectable, policy-checked, and replayable.</p>
+      <p>This is not a production agent runtime. It is a research prototype showing a direction: agent systems need a verifiable control plane.</p>
+    </section>
+
+    <section>
+      <h2>Repository</h2>
+      <p>Run the safety demo:</p>
+      <pre><code>make demo-safety</code></pre>
+      <p>GitHub: <a href="https://github.com/manishklach/INTENT-IR">github.com/manishklach/INTENT-IR</a></p>
+    </section>
+
+    <p class="footer">Research prototype. Focused on clarity, determinism, and the core idea: agents should execute verified programs, not blindly trust requests.</p>
+  </main>
+</body>
+</html>
