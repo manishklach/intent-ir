@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -6,13 +7,21 @@ from intentir.agent_runtime import AgentRuntime
 from intentir.assembler import assemble_file
 from intentir.intentasm_parser import parse_intentasm_file
 from intentir.trace import replay_trace
-from intentir.verifier import VerificationError, Verifier
+from intentir.verifier import VerificationError, Verifier, load_policy
 
 
-def test_safe_repo_scan_verifies_successfully():
+WORKER_POLICY, WORKER_POLICY_PATH = load_policy("worker")
+
+
+def test_policy_allows_safe_packet():
     program = parse_intentasm_file("examples/asm/safe_repo_scan.intentasm")
 
-    assert Verifier().verify(program, receiver_agent="worker") is True
+    assert Verifier().verify(
+        program,
+        receiver_agent="worker",
+        policy=WORKER_POLICY,
+        policy_name=WORKER_POLICY_PATH.name,
+    ) is True
 
 
 def test_safe_repo_scan_executes_repo_scan(tmp_path):
@@ -28,11 +37,16 @@ def test_safe_repo_scan_executes_repo_scan(tmp_path):
     assert result["committed_artifacts"] == ["repo_scan.report"]
 
 
-def test_unsafe_shell_fails_verification():
+def test_policy_rejects_shell_exec():
     program = parse_intentasm_file("examples/asm/unsafe_shell.intentasm")
 
-    with pytest.raises(VerificationError, match='tool "shell.exec" is not allowed for agent "worker"'):
-        Verifier().verify(program, receiver_agent="worker")
+    with pytest.raises(VerificationError, match='tool "shell.exec" not allowed by policy "worker.policy.json"'):
+        Verifier().verify(
+            program,
+            receiver_agent="worker",
+            policy=WORKER_POLICY,
+            policy_name=WORKER_POLICY_PATH.name,
+        )
 
 
 def test_unsafe_shell_does_not_execute_and_trace_contains_rejection(tmp_path):
@@ -45,8 +59,51 @@ def test_unsafe_shell_does_not_execute_and_trace_contains_rejection(tmp_path):
     assert result["verified"] is False
     assert result["executed"] is False
     entries = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()]
-    assert any(entry.get("outcome") == "reject" for entry in entries)
-    assert any('shell.exec' in entry.get("message", "") for entry in entries)
+    assert any(entry.get("event") == "REJECT" for entry in entries)
+    assert any(entry.get("reason") == "policy_violation" for entry in entries)
+    assert any(entry.get("detail") == "tool shell.exec not allowed" for entry in entries)
+
+
+def test_policy_rejects_budget_overflow():
+    program = parse_intentasm_file("examples/asm/unsafe_budget.intentasm")
+
+    with pytest.raises(VerificationError, match="memory 2048MB exceeds policy limit 512MB"):
+        Verifier().verify(
+            program,
+            receiver_agent="worker",
+            policy=WORKER_POLICY,
+            policy_name=WORKER_POLICY_PATH.name,
+        )
+
+
+def test_policy_requires_assert():
+    program = parse_intentasm_file("examples/asm/hello_agent.intentasm")
+
+    with pytest.raises(VerificationError, match="missing ASSERT instruction \\(policy requires asserts\\)"):
+        Verifier().verify(
+            program,
+            receiver_agent="worker",
+            policy=WORKER_POLICY,
+            policy_name=WORKER_POLICY_PATH.name,
+        )
+
+
+def test_policy_requires_commit():
+    program_text = Path("examples/asm/safe_repo_scan.intentasm").read_text(encoding="utf-8").replace(
+        'COMMIT status="delegated" artifact="repo_scan.report"\n',
+        "",
+    )
+    from intentir.intentasm_parser import parse_intentasm
+
+    program = parse_intentasm(program_text)
+
+    with pytest.raises(VerificationError, match="missing COMMIT instruction \\(policy requires commit\\)"):
+        Verifier().verify(
+            program,
+            receiver_agent="worker",
+            policy=WORKER_POLICY,
+            policy_name=WORKER_POLICY_PATH.name,
+        )
 
 
 def test_replay_works_for_both_traces(tmp_path):

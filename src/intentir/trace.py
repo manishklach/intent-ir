@@ -44,7 +44,7 @@ def replay_trace(path: str | Path) -> list[dict[str, Any]]:
             entry = json.loads(line)
             entries.append(entry)
             message = entry.get("message") or entry.get("opcode")
-            detail = entry.get("outcome") or entry.get("opcode") or entry.get("event")
+            detail = entry.get("detail") or entry.get("outcome") or entry.get("opcode") or entry.get("event")
             print(f"[replay] pc={entry.get('pc')} event={entry.get('event')} detail={detail} message={message}")
     print(f"[replay] succeeded with {len(entries)} events")
     return entries

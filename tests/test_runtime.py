@@ -19,9 +19,9 @@ def test_receiver_executes_valid_packet(tmp_path, capsys):
 
 
 def test_trace_replay_succeeds(tmp_path, capsys):
-    binary_path = tmp_path / "hello.intentbin"
-    binary_path.write_bytes(assemble_file("examples/asm/hello_agent.intentasm"))
-    trace_path = tmp_path / "hello.intenttrace.jsonl"
+    binary_path = tmp_path / "safe.intentbin"
+    binary_path.write_bytes(assemble_file("examples/asm/safe_repo_scan.intentasm"))
+    trace_path = tmp_path / "safe.intenttrace.jsonl"
 
     runtime = AgentRuntime(agent_name="worker", execute=True, trace_path=trace_path)
     runtime.recv_binary(binary_path)

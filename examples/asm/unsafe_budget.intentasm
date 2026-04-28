@@ -1,0 +1,10 @@
+AGENT name="planner"
+TASK id="unsafe-budget" summary="Attempt a valid tool call with a budget that exceeds worker policy" kind="policy-test" priority="high"
+BUDGET tokens=3000 memory_mb=2048 wall_ms=1500
+PAYLOAD name="scan_request" format="json" value={"include":["*.py"],"root":"."}
+SEND to="worker"
+CALL tool="repo.scan" payload=@scan_request mode="sync"
+ASSERT condition="receiver_has_repo_access"
+TRACE name="unsafe_budget_trace"
+COMMIT status="blocked" artifact="budget_violation.report"
+HALT

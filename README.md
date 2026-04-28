@@ -39,6 +39,36 @@ Replayable Trace
 
 The sender-side flow turns a JSON message into human-readable IntentASM, then into a compact `IntentBin` packet. The receiver can disassemble the packet for inspection, verify it before execution, and record a replayable trace when it runs the packet.
 
+## Policy Enforcement
+
+INTENT-IR does not rely on implicit trust.
+
+Each agent enforces an explicit execution policy:
+
+- allowed tools
+- resource limits
+- required invariants
+
+Packets are verified against policy before execution.
+
+If `--policy` is omitted on `recv`, INTENT-IR auto-loads `policies/{agent}.policy.json`.
+
+Example `worker.policy.json`:
+
+```json
+{
+  "allowed_tools": ["repo.scan", "artifact.write", "trace.emit"],
+  "denied_tools": ["shell.exec", "file.delete", "network.post", "secrets.read"],
+  "max_budget": {
+    "memory_mb": 512,
+    "tokens": 5000,
+    "wall_ms": 5000
+  },
+  "require_asserts": true,
+  "require_commit": true
+}
+```
+
 ## Killer Demo: Verifiable Agent Packets
 
 Run:
@@ -51,12 +81,14 @@ This demo shows a planner agent sending two packets to a worker agent:
 
 - `safe_repo_scan` passes verification, executes `CALL repo.scan`, commits `repo_scan.report`, and writes a trace.
 - `unsafe_shell` is rejected deterministically because `shell.exec` is not allowed for `worker`, is not executed, and writes a rejection trace.
+- `unsafe_budget` is rejected because `memory_mb=2048` exceeds the worker policy limit of `512`.
 
 Expected output:
 
 ```text
 [recv] agent=worker packet=safe_repo_scan.intentbin
 [disasm] decoded 11 instructions
+[policy] loaded policies/worker.policy.json
 [verify] passed
 [execute] CALL repo.scan
 [commit] repo_scan.report
@@ -64,10 +96,19 @@ Expected output:
 
 [recv] agent=worker packet=unsafe_shell.intentbin
 [disasm] decoded 8 instructions
+[policy] loaded policies/worker.policy.json
 [verify] failed
-[reject] tool "shell.exec" is not allowed for agent "worker"
+[reject] tool "shell.exec" not allowed by policy "worker.policy.json"
 [execute] skipped
 [trace] wrote traces/unsafe_shell.intenttrace.jsonl
+
+[recv] agent=worker packet=unsafe_budget.intentbin
+[disasm] decoded 10 instructions
+[policy] loaded policies/worker.policy.json
+[verify] failed
+[reject] memory 2048MB exceeds policy limit 512MB
+[execute] skipped
+[trace] wrote traces/unsafe_budget.intenttrace.jsonl
 ```
 
 ## Repository layout
@@ -95,8 +136,8 @@ Run the assembly path end to end:
 intentir compile-message examples/messages/repo_scan.json -o build/repo_scan.intentasm
 intentir asm build/repo_scan.intentasm -o build/repo_scan.intentbin
 intentir disasm build/repo_scan.intentbin -o build/repo_scan.disasm.intentasm
-intentir verify build/repo_scan.intentasm
-intentir recv build/repo_scan.intentbin --agent worker --execute --trace traces/repo_scan.intenttrace.jsonl
+intentir verify build/repo_scan.intentasm --agent worker --policy policies/worker.policy.json
+intentir recv build/repo_scan.intentbin --agent worker --policy policies/worker.policy.json --execute --trace traces/repo_scan.intenttrace.jsonl
 intentir replay traces/repo_scan.intenttrace.jsonl
 ```
 

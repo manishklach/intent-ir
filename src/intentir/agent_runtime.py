@@ -5,13 +5,20 @@ from pathlib import Path
 from .binary import Instruction, Opcode, PayloadRef, Program, decode_program
 from .trace import TraceWriter
 from .transport import should_deliver
-from .verifier import VerificationError, Verifier
+from .verifier import VerificationError, Verifier, load_policy
 
 
 class AgentRuntime:
-    def __init__(self, agent_name: str, execute: bool = False, trace_path: str | None = None):
+    def __init__(
+        self,
+        agent_name: str,
+        execute: bool = False,
+        trace_path: str | None = None,
+        policy_path: str | None = None,
+    ):
         self.agent_name = agent_name
         self.execute = execute
+        self.policy_path = policy_path
         self.trace_writer = TraceWriter(trace_path) if trace_path else None
         self.state = {
             "sender": None,
@@ -34,17 +41,35 @@ class AgentRuntime:
             packet_path = Path(path)
             program = decode_program(packet_path.read_bytes())
             self._record(None, None, f"received packet {packet_path.name}", {"instruction_count": len(program.instructions)})
+            policy, loaded_policy_path = load_policy(self.agent_name, self.policy_path)
+            policy_label = loaded_policy_path.as_posix() if loaded_policy_path else None
+            if policy_label:
+                self._record(None, None, f"loaded policy {policy_label}", {"policy_path": policy_label})
             verifier = Verifier()
             try:
-                verifier.verify(program, receiver_agent=self.agent_name)
+                verifier.verify(
+                    program,
+                    receiver_agent=self.agent_name,
+                    policy=policy,
+                    policy_name=loaded_policy_path.name if loaded_policy_path else None,
+                )
             except VerificationError as exc:
                 message = str(exc)
                 self.state["status"] = "rejected"
-                self._record(None, None, "verification failed", {"outcome": "reject", "reason": message})
-                self._record(None, None, f"rejected packet: {message}", {"outcome": "reject"})
+                reason = _classify_rejection_reason(message)
+                detail = _normalize_rejection_detail(message)
+                self._record(None, None, "verification failed", {"outcome": "reject", "reason": reason, "detail": detail})
+                self._record(
+                    None,
+                    None,
+                    f"rejected packet: {message}",
+                    {"outcome": "reject", "reason": reason, "detail": detail},
+                    event_name="REJECT",
+                )
                 return {
                     "packet": packet_path.name,
                     "instruction_count": len(program.instructions),
+                    "policy_path": policy_label,
                     "verified": False,
                     "delivered": False,
                     "executed": False,
@@ -58,6 +83,7 @@ class AgentRuntime:
                 return {
                     "packet": packet_path.name,
                     "instruction_count": len(program.instructions),
+                    "policy_path": policy_label,
                     "verified": True,
                     "delivered": False,
                     "executed": False,
@@ -69,6 +95,7 @@ class AgentRuntime:
                 return {
                     "packet": packet_path.name,
                     "instruction_count": len(program.instructions),
+                    "policy_path": policy_label,
                     "verified": True,
                     "delivered": True,
                     "executed": False,
@@ -78,6 +105,7 @@ class AgentRuntime:
             return {
                 "packet": packet_path.name,
                 "instruction_count": len(program.instructions),
+                "policy_path": policy_label,
                 "verified": True,
                 "delivered": True,
                 "executed": True,
@@ -149,10 +177,17 @@ class AgentRuntime:
         else:
             raise VerificationError(f"runtime does not implement opcode {opcode.name}")
 
-    def _record(self, pc: int | None, opcode: str | None, message: str, extra: dict | None = None) -> None:
+    def _record(
+        self,
+        pc: int | None,
+        opcode: str | None,
+        message: str,
+        extra: dict | None = None,
+        event_name: str | None = None,
+    ) -> None:
         if self.trace_writer:
             event = {
-                "event": "execute" if opcode else "transport",
+                "event": event_name or ("execute" if opcode else "transport"),
                 "agent": self.agent_name,
                 "pc": pc,
                 "opcode": opcode,
@@ -175,3 +210,16 @@ def _resolve_payload(value, payloads: dict[str, object]):
     if isinstance(value, PayloadRef):
         return payloads.get(value.name)
     return value
+
+
+def _classify_rejection_reason(message: str) -> str:
+    if "policy" in message or "exceeds policy limit" in message or "policy requires" in message:
+        return "policy_violation"
+    return "verification_error"
+
+
+def _normalize_rejection_detail(message: str) -> str:
+    if message.startswith('tool "'):
+        tool_name = message.split('"', 2)[1]
+        return f"tool {tool_name} not allowed"
+    return message

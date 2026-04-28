@@ -9,7 +9,7 @@ from .disassembler import disassemble_file, render_intentasm
 from .intentasm_parser import parse_intentasm_file
 from .message_compiler import compile_message_file
 from .trace import replay_trace
-from .verifier import VerificationError, Verifier
+from .verifier import VerificationError, Verifier, load_policy
 
 
 def main() -> None:
@@ -33,10 +33,13 @@ def main() -> None:
 
     verify_parser = subparsers.add_parser("verify", help="Verify IntentASM")
     verify_parser.add_argument("input")
+    verify_parser.add_argument("--agent")
+    verify_parser.add_argument("--policy")
 
     recv_parser = subparsers.add_parser("recv", help="Receive an IntentBin packet")
     recv_parser.add_argument("input")
     recv_parser.add_argument("--agent", required=True)
+    recv_parser.add_argument("--policy")
     recv_parser.add_argument("--execute", action="store_true")
     recv_parser.add_argument("--trace")
 
@@ -70,14 +73,32 @@ def main() -> None:
 
     if args.command == "verify":
         program = parse_intentasm_file(args.input)
-        Verifier().verify(program)
+        receiver_agent = args.agent
+        if receiver_agent is None:
+            receiver_agent = None
+        policy, loaded_policy_path = load_policy(receiver_agent, args.policy)
+        Verifier().verify(
+            program,
+            receiver_agent=receiver_agent,
+            policy=policy,
+            policy_name=loaded_policy_path.name if loaded_policy_path else None,
+        )
+        if loaded_policy_path:
+            print(f"[policy] loaded {loaded_policy_path.as_posix()}")
         print("[verify] verification passed")
         return
 
     if args.command == "recv":
-        result = AgentRuntime(agent_name=args.agent, execute=args.execute, trace_path=args.trace).recv_binary(args.input)
+        result = AgentRuntime(
+            agent_name=args.agent,
+            execute=args.execute,
+            trace_path=args.trace,
+            policy_path=args.policy,
+        ).recv_binary(args.input)
         print(f"[recv] agent={args.agent} packet={Path(args.input).name}")
         print(f"[disasm] decoded {result['instruction_count']} instructions")
+        if result.get("policy_path"):
+            print(f"[policy] loaded {result['policy_path']}")
         if result.get("verified"):
             print("[verify] passed")
         else:

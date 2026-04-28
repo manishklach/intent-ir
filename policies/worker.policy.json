@@ -1,0 +1,20 @@
+{
+  "allowed_tools": [
+    "repo.scan",
+    "artifact.write",
+    "trace.emit"
+  ],
+  "denied_tools": [
+    "shell.exec",
+    "file.delete",
+    "network.post",
+    "secrets.read"
+  ],
+  "max_budget": {
+    "memory_mb": 512,
+    "tokens": 5000,
+    "wall_ms": 5000
+  },
+  "require_asserts": true,
+  "require_commit": true
+}

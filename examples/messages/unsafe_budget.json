@@ -1,0 +1,38 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "unsafe-budget",
+    "summary": "Attempt a valid tool call with a budget that exceeds worker policy",
+    "kind": "policy-test",
+    "priority": "high"
+  },
+  "budget": {
+    "tokens": 3000,
+    "memory_mb": 2048,
+    "wall_ms": 1500
+  },
+  "payloads": {
+    "scan_request": {
+      "root": ".",
+      "include": [
+        "*.py"
+      ]
+    }
+  },
+  "call": {
+    "tool": "repo.scan",
+    "payload": "scan_request",
+    "mode": "sync"
+  },
+  "asserts": [
+    "receiver_has_repo_access"
+  ],
+  "trace": {
+    "name": "unsafe_budget_trace"
+  },
+  "commit": {
+    "status": "blocked",
+    "artifact": "budget_violation.report"
+  }
+}
