@@ -1,13 +1,36 @@
 # INTENT-IR
+**A Deterministic Execution Substrate for AI Agents.**
 
-**Deterministic, Inspectable Intermediate Representation for AI Agents.**
+Modern AI agents typically operate by emitting unstructured text or calling opaque APIs, making their actions difficult to audit, verify, or replay. **INTENT-IR** introduces a research-level intermediate representation (IR) and runtime that treats agent actions as first-class instructions. By lowering agentic intent to a structured ISA, we enable static safety checks, deterministic execution, and high-fidelity trace/replay functionality—bringing the rigor of systems engineering to agentic workflows.
 
-INTENT-IR is a research prototype for an execution substrate where agents emit structured intent instead of vague text. By compiling agent workflows into a verifiable IR, we enable:
+---
 
-- **Deterministic Execution**: Replay any agent run with bit-for-bit fidelity.
-- **Verifiable Safety**: Use eBPF-style checks to enforce budgets and resource limits before execution.
-- **Rich Observability**: Wireshark-style inspection of every instruction, tool call, and state transition.
-- **Trace/Replay**: Trace generation for auditing and high-fidelity debugging.
+## Why this exists
+
+### The Problem: Abstraction Leakage & Opacity
+Current agentic workflows suffer from a lack of formal boundaries. When an agent calls a tool, the reasoning logic and the execution side-effects are tightly coupled. This makes it impossible to:
+1. **Verify safety** before execution (e.g., will this agent exceed its token budget?).
+2. **Reproduce failures** exactly (LLM outputs are non-deterministic).
+3. **Inspect intent** without parsing ambiguous logs.
+
+### The Solution: Structured Execution
+INTENT-IR provides a formal instruction set for the reasoning engine. Instead of "doing" things, the agent "emits" intent. This intent is:
+- **Compiled**: Lowered from high-level goals to discrete instructions.
+- **Verified**: Checked against resource bounds and safety constraints (WASM/eBPF model).
+- **Traced**: Every state transition is recorded for bit-perfect replay.
+
+---
+
+## Opaque APIs vs. INTENT-IR
+
+| Dimension | Opaque APIs / Tool-Calling | INTENT-IR |
+| :--- | :--- | :--- |
+| **Inspectability** | Black-box (logs only) | White-box (instruction-level) |
+| **Determinism** | Non-deterministic / Flaky | Bit-perfect replay |
+| **Replayability** | Manual / Scripted | Native, trace-first model |
+| **Validation** | Runtime errors | Static verification (eBPF-style) |
+| **Composability** | High-level / Brittle | Low-level / Orthogonal ISA |
+| **Debugging** | Log-parsing | Instruction-stepping |
 
 ---
 
