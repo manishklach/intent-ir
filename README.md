@@ -101,7 +101,7 @@ make demo
 The demo prints:
 
 1. compiled assembly
-2. binary packet path
+2. binary packet created
 3. disassembly
 4. verification passed
 5. receiver executed CALL

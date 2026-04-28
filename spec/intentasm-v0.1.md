@@ -8,7 +8,8 @@ IntentASM is intentionally small:
 
 - one instruction per line
 - uppercase opcode mnemonic
-- `key=value` operands
+- canonical `key=value` operands for stable disassembly
+- optional shorthand assembly input for common packet forms
 - JSON values for structured payloads
 - `@payload_name` references for named payload reuse
 
@@ -27,6 +28,22 @@ TRACE name="repo_scan_trace"
 COMMIT status="delegated"
 HALT
 ```
+
+The parser also accepts a more assembly-shaped shorthand input for common packet forms:
+
+```text
+AGENT planner
+TASK t1 TYPE "repo_scan"
+BUDGET t1 MEMORY 512MB TIME 30000MS TOKENS 4096
+PAYLOAD p1 JSON {"repo":".","include":["*.md","*.py"]}
+SEND planner worker CHANNEL "task" PAYLOAD p1
+CALL worker TOOL "repo.scan" ARGS p1
+ASSERT LAST.status == "ok"
+COMMIT t1 ARTIFACT "repo_summary.json"
+HALT
+```
+
+The disassembler emits canonical `key=value` output even when shorthand input is accepted.
 
 ## Syntax rules
 

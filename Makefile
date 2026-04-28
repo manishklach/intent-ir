@@ -11,7 +11,7 @@ demo:
 	@echo "1. compiled assembly"
 	$(PKG) compile-message examples/messages/repo_scan.json -o build/repo_scan.intentasm
 	cat build/repo_scan.intentasm
-	@echo "2. binary packet path"
+	@echo "2. binary packet created"
 	$(PKG) asm build/repo_scan.intentasm -o build/repo_scan.intentbin
 	@echo "build/repo_scan.intentbin"
 	@echo "3. disassembly"

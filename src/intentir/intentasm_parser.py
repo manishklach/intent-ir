@@ -77,6 +77,31 @@ def _split_operand_tokens(text: str) -> list[str]:
     return tokens
 
 
+def _tokenize_shorthand(text: str) -> list[str]:
+    tokens: list[str] = []
+    index = 0
+    while index < len(text):
+        while index < len(text) and text[index].isspace():
+            index += 1
+        if index >= len(text):
+            break
+        if text[index] == "\"":
+            token, index = _parse_string(text, index)
+            tokens.append(token)
+        elif text[index] == "{":
+            token, index = _parse_balanced(text, index, "{", "}")
+            tokens.append(token)
+        elif text[index] == "[":
+            token, index = _parse_balanced(text, index, "[", "]")
+            tokens.append(token)
+        else:
+            start = index
+            while index < len(text) and not text[index].isspace():
+                index += 1
+            tokens.append(text[start:index])
+    return tokens
+
+
 def _parse_value(token: str):
     if token.startswith("@"):
         return PayloadRef(token[1:])
@@ -95,6 +120,95 @@ def _parse_value(token: str):
             return token
 
 
+def _parse_keyword_pairs(tokens: list[str], start: int, keyword_map: dict[str, str] | None = None) -> list[Operand]:
+    operands: list[Operand] = []
+    keyword_map = keyword_map or {}
+    index = start
+    while index < len(tokens):
+        if index + 1 >= len(tokens):
+            raise IntentASMParseError(f"keyword '{tokens[index]}' is missing a value")
+        keyword = tokens[index]
+        key = keyword_map.get(keyword.upper(), keyword.lower())
+        value = _parse_value(tokens[index + 1])
+        if key in {"payload", "args"} and isinstance(value, str):
+            value = PayloadRef(value)
+        operands.append(Operand(key=key, value=value))
+        index += 2
+    return operands
+
+
+def _parse_shorthand_operands(opcode_name: str, operand_text: str) -> list[Operand]:
+    tokens = _tokenize_shorthand(operand_text)
+    if not tokens:
+        return []
+
+    if opcode_name == "AGENT":
+        return [Operand("name", _parse_value(tokens[0]))]
+
+    if opcode_name == "TASK":
+        operands = [Operand("id", _parse_value(tokens[0]))]
+        operands.extend(
+            _parse_keyword_pairs(tokens, 1, {"TYPE": "type", "KIND": "kind", "PRIORITY": "priority", "SUMMARY": "summary"})
+        )
+        return operands
+
+    if opcode_name == "BUDGET":
+        operands = [Operand("task", _parse_value(tokens[0]))]
+        operands.extend(_parse_keyword_pairs(tokens, 1, {"MEMORY": "memory", "TIME": "time", "TOKENS": "tokens"}))
+        return operands
+
+    if opcode_name == "PAYLOAD":
+        if len(tokens) < 3:
+            raise IntentASMParseError("PAYLOAD shorthand requires name, format, and value")
+        return [
+            Operand("name", _parse_value(tokens[0])),
+            Operand("format", str(_parse_value(tokens[1])).lower()),
+            Operand("value", _parse_value(tokens[2])),
+        ]
+
+    if opcode_name == "SEND":
+        operands = []
+        if len(tokens) >= 2 and tokens[1].upper() not in {"CHANNEL", "PAYLOAD"}:
+            operands.append(Operand("from", _parse_value(tokens[0])))
+            operands.append(Operand("to", _parse_value(tokens[1])))
+            start = 2
+        else:
+            operands.append(Operand("to", _parse_value(tokens[0])))
+            start = 1
+        operands.extend(_parse_keyword_pairs(tokens, start, {"CHANNEL": "channel", "PAYLOAD": "payload"}))
+        return operands
+
+    if opcode_name == "CALL":
+        operands = []
+        start = 0
+        if len(tokens) >= 1 and tokens[0].upper() not in {"TOOL", "ARGS", "PAYLOAD", "MODE"}:
+            operands.append(Operand("agent", _parse_value(tokens[0])))
+            start = 1
+        operands.extend(_parse_keyword_pairs(tokens, start, {"TOOL": "tool", "ARGS": "payload", "PAYLOAD": "payload", "MODE": "mode"}))
+        return operands
+
+    if opcode_name == "ASSERT":
+        return [Operand("condition", operand_text.strip())]
+
+    if opcode_name == "COMMIT":
+        operands = [Operand("task", _parse_value(tokens[0]))]
+        operands.extend(_parse_keyword_pairs(tokens, 1, {"ARTIFACT": "artifact", "STATUS": "status"}))
+        return operands
+
+    if opcode_name == "TRACE":
+        if len(tokens) == 1:
+            return [Operand("name", _parse_value(tokens[0]))]
+        return _parse_keyword_pairs(tokens, 0, {"NAME": "name"})
+
+    if opcode_name == "RELEASE":
+        return [Operand("resource", _parse_value(tokens[0]))]
+
+    if opcode_name == "FAIL":
+        return [Operand("reason", operand_text.strip())]
+
+    raise IntentASMParseError(f"unsupported shorthand syntax for opcode '{opcode_name}'")
+
+
 def parse_intentasm(text: str) -> Program:
     instructions: list[Instruction] = []
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
@@ -111,9 +225,13 @@ def parse_intentasm(text: str) -> Program:
             raise IntentASMParseError(f"line {line_number}: unknown opcode '{opcode_name}'")
         operand_text = parts[1] if len(parts) > 1 else ""
         operands: list[Operand] = []
-        for token in _split_operand_tokens(operand_text):
-            key, value_token = token.split("=", 1)
-            operands.append(Operand(key=key, value=_parse_value(value_token)))
+        if operand_text:
+            if _tokenize_shorthand(operand_text) and "=" in _tokenize_shorthand(operand_text)[0]:
+                for token in _split_operand_tokens(operand_text):
+                    key, value_token = token.split("=", 1)
+                    operands.append(Operand(key=key, value=_parse_value(value_token)))
+            else:
+                operands = _parse_shorthand_operands(opcode_name, operand_text)
         instructions.append(Instruction(OPCODE_BY_NAME[opcode_name], operands))
     return Program(instructions=instructions)
 
