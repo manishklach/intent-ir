@@ -14,6 +14,13 @@ def test_assemble_disassemble_roundtrip():
     assert rendered == expected
 
 
+def test_disassembled_output_contains_call():
+    source = Path("examples/asm/repo_scan.intentasm").read_text(encoding="utf-8")
+    rendered = disassemble_binary(assemble_intentasm(source))
+
+    assert 'CALL tool="repo.scan"' in rendered
+
+
 def test_message_json_to_intentasm_matches_example():
     program = compile_message_file("examples/messages/repo_scan.json")
     rendered = render_intentasm(program)

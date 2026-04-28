@@ -1,6 +1,10 @@
 # INTENT-IR
 
-Assembly-style communication layer for AI agents -- compile messages into verifiable, replayable instruction packets.
+Assembly-style communication layer for AI agents — compile messages into verifiable, replayable instruction packets.
+
+INTENT-IR is an assembly-style communication layer for AI agents.
+
+Agents should be able to send small verifiable instruction packets to other agents. The receiver can disassemble, verify, execute, trace, and replay exactly what happened.
 
 INTENT-IR is a research prototype for agent-to-agent communication. The repository treats an agent message as a compact instruction packet that can be compiled, assembled, verified, executed by a receiver runtime, and replayed from trace. The goal is not to replace every text exchange between agents. The goal is to make high-value handoffs inspectable, bounded, and reproducible.
 
@@ -23,13 +27,13 @@ INTENT-IR is a research-prototype assembly pipeline. The ISA, binary format, and
 
 ```text
 Agent Message JSON
-  ↓ compile-message
+  -> compile-message
 IntentASM
-  ↓ asm
+  -> asm
 IntentBin
-  ↓ recv/disasm/verify
+  -> disasm / recv / verify
 Verified Receiver Execution
-  ↓ trace
+  -> trace
 Replayable Trace
 ```
 
@@ -54,39 +58,14 @@ Install the package in editable mode:
 pip install -e .
 ```
 
-Compile a message into IntentASM:
+Run the assembly path end to end:
 
 ```bash
 intentir compile-message examples/messages/repo_scan.json -o build/repo_scan.intentasm
-```
-
-Assemble the IntentASM program into IntentBin:
-
-```bash
 intentir asm build/repo_scan.intentasm -o build/repo_scan.intentbin
-```
-
-Disassemble the binary packet back into IntentASM:
-
-```bash
 intentir disasm build/repo_scan.intentbin -o build/repo_scan.disasm.intentasm
-```
-
-Verify the assembly program:
-
-```bash
 intentir verify build/repo_scan.intentasm
-```
-
-Execute the packet on a receiver runtime and record a trace:
-
-```bash
 intentir recv build/repo_scan.intentbin --agent worker --execute --trace traces/repo_scan.intenttrace.jsonl
-```
-
-Replay the recorded trace:
-
-```bash
 intentir replay traces/repo_scan.intenttrace.jsonl
 ```
 
