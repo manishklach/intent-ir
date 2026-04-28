@@ -2,47 +2,53 @@
 
 Assembly-style communication layer for AI agents — compile messages into verifiable, replayable instruction packets.
 
-INTENT-IR is an assembly-style communication layer for AI agents.
-
 Agents shouldn’t blindly execute requests. INTENT-IR lets them disassemble, verify, reject, execute, trace, and replay agent packets.
 
-## Demo (safe vs unsafe)
+## Demo: safe vs unsafe packets
 
 ```bash
 make demo-safety
 ```
 
 ```text
+[recv] agent=worker packet=safe_repo_scan.intentbin
+[policy] loaded policies/worker.policy.json
 [verify] passed
 [execute] CALL repo.scan
 [commit] repo_scan.report
 
+[recv] agent=worker packet=unsafe_shell.intentbin
+[policy] loaded policies/worker.policy.json
 [verify] failed
 [reject] tool "shell.exec" not allowed by policy "worker.policy.json"
 
+[recv] agent=worker packet=unsafe_budget.intentbin
+[policy] loaded policies/worker.policy.json
 [verify] failed
 [reject] memory 2048MB exceeds policy limit 512MB
 ```
 
-See the polished terminal transcript in [docs/demo-output.txt](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-output.txt).
+See the polished terminal transcript in [docs/demo-output.txt](docs/demo-output.txt).
+See the full canonical transcript in [docs/demo-transcript.md](docs/demo-transcript.md).
 
-Research prototype:
-- local and deterministic
-- policy-enforced before execution
-- designed to be understandable from terminal output
+## Status
 
-INTENT-IR is a research prototype for agent-to-agent communication. The repository treats an agent message as a compact instruction packet that can be compiled, assembled, verified, executed by a receiver runtime, and replayed from trace. The goal is not to replace every text exchange between agents. The goal is to make high-value handoffs inspectable, bounded, and reproducible.
+INTENT-IR is a research prototype.
 
-## Why assembly-style packets
+The ISA, binary format, verifier rules, and policy files are intentionally small and explicit so they can be inspected, debated, and extended. This repository is not presented as production-ready agent middleware.
 
-Most agent systems still communicate through natural language transcripts or opaque tool invocations. That is flexible, but it also leaves important questions unanswered:
+## Why this exists
+
+Most agent systems still communicate through natural language transcripts or opaque tool invocations.
+
+That is flexible, but it leaves important questions unanswered:
 
 - What exactly did the sender ask the receiver to do?
 - Which payload was referenced by the tool call?
 - Was the packet structurally valid before execution?
 - Can the same receiver behavior be replayed later?
 
-INTENT-IR answers those questions with a small instruction set and a binary packet format designed for verification and auditability.
+INTENT-IR answers those questions with a small instruction set, an inspectable assembly format, and a policy-enforced receiver.
 
 ## The Assembly Path
 
@@ -58,7 +64,9 @@ Verified Receiver Execution
 Replayable Trace
 ```
 
-The sender-side flow turns a JSON message into human-readable IntentASM, then into a compact `IntentBin` packet. The receiver can disassemble the packet for inspection, verify it before execution, and record a replayable trace when it runs the packet.
+The sender-side flow turns a JSON message into human-readable IntentASM, then into a compact `IntentBin` packet.
+
+The receiver can disassemble the packet for inspection, verify it before execution, and record a replayable trace when it runs the packet.
 
 ## Policy Enforcement
 
@@ -90,65 +98,6 @@ Example `worker.policy.json`:
 }
 ```
 
-## Killer Demo: Verifiable Agent Packets
-
-Run:
-
-```bash
-make demo-safety
-```
-
-This demo shows a planner agent sending two packets to a worker agent:
-
-- `safe_repo_scan` passes verification, executes `CALL repo.scan`, commits `repo_scan.report`, and writes a trace.
-- `unsafe_shell` is rejected deterministically because `shell.exec` is not allowed for `worker`, is not executed, and writes a rejection trace.
-- `unsafe_budget` is rejected because `memory_mb=2048` exceeds the worker policy limit of `512`.
-
-Expected output:
-
-```text
-[recv] agent=worker packet=safe_repo_scan.intentbin
-[disasm] decoded 11 instructions
-[policy] loaded policies/worker.policy.json
-[verify] passed
-[execute] CALL repo.scan
-[commit] repo_scan.report
-[trace] wrote traces/safe_repo_scan.intenttrace.jsonl
-
-[recv] agent=worker packet=unsafe_shell.intentbin
-[disasm] decoded 8 instructions
-[policy] loaded policies/worker.policy.json
-[verify] failed
-[reject] tool "shell.exec" not allowed by policy "worker.policy.json"
-[execute] skipped
-[trace] wrote traces/unsafe_shell.intenttrace.jsonl
-
-[recv] agent=worker packet=unsafe_budget.intentbin
-[disasm] decoded 10 instructions
-[policy] loaded policies/worker.policy.json
-[verify] failed
-[reject] memory 2048MB exceeds policy limit 512MB
-[execute] skipped
-[trace] wrote traces/unsafe_budget.intenttrace.jsonl
-```
-
-The canonical transcript is in [docs/demo-transcript.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-transcript.md), and the polished terminal block is in [docs/demo-output.txt](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-output.txt).
-
-## Status
-
-INTENT-IR is a research prototype. The ISA, binary format, verifier rules, and policy files are intentionally small and explicit so they can be inspected, debated, and extended. This repository is not presented as production-ready agent middleware.
-
-## Repository layout
-
-```text
-spec/                Language, opcode, schema, and binary format docs
-src/intentir/        Parser, assembler, verifier, runtime, trace, and CLI
-examples/messages/   Example agent messages in JSON
-examples/asm/        Example IntentASM programs
-tests/               Parser, roundtrip, verifier, runtime, and replay tests
-traces/              Example output location for execution traces
-```
-
 ## Quickstart
 
 Install the package in editable mode:
@@ -170,29 +119,46 @@ intentir replay traces/repo_scan.intenttrace.jsonl
 
 If you are on WSL or Linux, `python3` is the default interpreter used by the Makefile.
 
-## Demo
+## Demo Targets
 
-Run the full sender-to-receiver flow:
+Run the launch-ready safety demo:
+
+```bash
+make demo-safety
+```
+
+Run the broader sender-to-receiver flow:
 
 ```bash
 make demo
 ```
 
-The demo prints:
+Run the test suite:
 
-1. compiled assembly
-2. binary packet created
-3. disassembly
-4. verification passed
-5. receiver executed CALL
-6. trace written
-7. replay succeeded
+```bash
+make test
+```
 
-## Example packet
+## Repository Layout
 
-The `examples/messages/repo_scan.json` message compiles to an assembly packet in `examples/asm/repo_scan.intentasm` with explicit sender, task, budget, payload, send, call, trace, commit, and halt instructions. The binary encoding preserves those instructions with opcode records and a payload table, while the verifier enforces basic structural rules before execution.
+```text
+spec/                Language, opcode, schema, and binary format docs
+src/intentir/        Parser, assembler, verifier, runtime, trace, and CLI
+examples/messages/   Example agent messages in JSON
+examples/asm/        Example IntentASM programs
+policies/            Agent policy JSON files
+tests/               Parser, roundtrip, verifier, runtime, and replay tests
+traces/              Canonical demo traces
+docs/                Demo transcripts and repo health notes
+```
 
-## Design constraints
+## Example Packet
+
+The `examples/messages/repo_scan.json` message compiles to an assembly packet in `examples/asm/repo_scan.intentasm` with explicit sender, task, budget, payload, send, call, trace, commit, and halt instructions.
+
+The binary encoding preserves those instructions with opcode records and a payload table, while the verifier enforces structural and policy rules before execution.
+
+## Design Constraints
 
 - Compact instruction packets over free-form execution requests
 - Verifiable sender intent before receiver execution
@@ -200,12 +166,19 @@ The `examples/messages/repo_scan.json` message compiles to an assembly packet in
 - Replay-first runtime traces for postmortem analysis
 - Minimal claims: verification and replayability are in scope; production-hardening is not
 
-## Specification entry points
+## Specs
 
-- [spec/intentasm-v0.1.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/intentasm-v0.1.md)
-- [spec/opcodes.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/opcodes.md)
-- [spec/binary-format.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/binary-format.md)
-- [spec/message-schema.json](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/message-schema.json)
+- [spec/intentasm-v0.1.md](spec/intentasm-v0.1.md)
+- [spec/opcodes.md](spec/opcodes.md)
+- [spec/binary-format.md](spec/binary-format.md)
+- [spec/message-schema.json](spec/message-schema.json)
+
+## Docs
+
+- [docs/demo-output.txt](docs/demo-output.txt)
+- [docs/demo-transcript.md](docs/demo-transcript.md)
+- [docs/demo.md](docs/demo.md)
+- [docs/repo-health.md](docs/repo-health.md)
 
 ## License
 
