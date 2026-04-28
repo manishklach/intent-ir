@@ -6,9 +6,25 @@ INTENT-IR is an assembly-style communication layer for AI agents.
 
 Agents shouldn’t blindly execute requests. INTENT-IR lets them disassemble, verify, reject, execute, trace, and replay agent packets.
 
+## Demo (safe vs unsafe)
+
 ```bash
 make demo-safety
 ```
+
+```text
+[verify] passed
+[execute] CALL repo.scan
+[commit] repo_scan.report
+
+[verify] failed
+[reject] tool "shell.exec" not allowed by policy "worker.policy.json"
+
+[verify] failed
+[reject] memory 2048MB exceeds policy limit 512MB
+```
+
+See the polished terminal transcript in [docs/demo-output.txt](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-output.txt).
 
 Research prototype:
 - local and deterministic
@@ -116,7 +132,7 @@ Expected output:
 [trace] wrote traces/unsafe_budget.intenttrace.jsonl
 ```
 
-The canonical transcript is in [docs/demo-transcript.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-transcript.md).
+The canonical transcript is in [docs/demo-transcript.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-transcript.md), and the polished terminal block is in [docs/demo-output.txt](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-output.txt).
 
 ## Status
 

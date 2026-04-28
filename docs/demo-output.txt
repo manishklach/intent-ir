@@ -1,0 +1,45 @@
+============================================================
+INTENT-IR Demo: Verifiable Agent Packets
+============================================================
+
+[compile-message] safe_repo_scan.json -> safe_repo_scan.intentasm
+[asm] safe_repo_scan.intentasm -> safe_repo_scan.intentbin
+
+[recv] agent=worker
+[disasm] decoded instructions
+[policy] loaded policies/worker.policy.json
+[verify] ✔ passed
+[execute] -> CALL repo.scan
+[commit] -> repo_scan.report
+[trace] written -> traces/safe_repo_scan.intenttrace.jsonl
+[replay] ✔ success
+
+------------------------------------------------------------
+
+[compile-message] unsafe_shell.json -> unsafe_shell.intentasm
+[asm] unsafe_shell.intentasm -> unsafe_shell.intentbin
+
+[recv] agent=worker
+[disasm] decoded instructions
+[policy] loaded policies/worker.policy.json
+[verify] ✖ failed
+[reject] tool "shell.exec" not allowed
+[execute] skipped
+[trace] written -> traces/unsafe_shell.intenttrace.jsonl
+[replay] ✔ confirms rejection
+
+------------------------------------------------------------
+
+[compile-message] unsafe_budget.json -> unsafe_budget.intentasm
+[asm] unsafe_budget.intentasm -> unsafe_budget.intentbin
+
+[recv] agent=worker
+[disasm] decoded instructions
+[policy] loaded policies/worker.policy.json
+[verify] ✖ failed
+[reject] memory 2048MB exceeds policy limit 512MB
+[execute] skipped
+[trace] written -> traces/unsafe_budget.intenttrace.jsonl
+[replay] ✔ confirms rejection
+
+============================================================
