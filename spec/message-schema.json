@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "INTENT-IR Agent Message",
+  "type": "object",
+  "required": ["sender", "recipient", "task", "call"],
+  "properties": {
+    "sender": {
+      "type": "string"
+    },
+    "recipient": {
+      "type": "string"
+    },
+    "task": {
+      "type": "object",
+      "required": ["id", "summary"],
+      "properties": {
+        "id": {"type": "string"},
+        "summary": {"type": "string"},
+        "kind": {"type": "string"},
+        "priority": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean"]
+      }
+    },
+    "payloads": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "call": {
+      "type": "object",
+      "required": ["tool"],
+      "properties": {
+        "tool": {"type": "string"},
+        "payload": {"type": "string"},
+        "mode": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "asserts": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "trace": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "object", "additionalProperties": true}
+      ]
+    },
+    "commit": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "object", "additionalProperties": true}
+      ]
+    },
+    "release": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "fail": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

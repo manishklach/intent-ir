@@ -1,0 +1,12 @@
+AGENT name="planner"
+TASK id="repo-scan" summary="Scan repository layout and identify build entrypoints" kind="analysis" priority="normal"
+BUDGET tokens=1200 memory_mb=256 wall_ms=1500
+PAYLOAD name="scan_request" format="json" value={"depth":"shallow","include":["pyproject.toml","README.md","src"],"root":"src"}
+SEND to="worker"
+CALL tool="repo.scan" payload=@scan_request mode="sync"
+ASSERT condition="receiver_has_repo_access"
+ASSERT condition="payload_scan_request_present"
+TRACE name="repo_scan_trace" sample="full"
+COMMIT status="delegated" artifact="repo_scan.report"
+RELEASE resource="scan_slot"
+HALT

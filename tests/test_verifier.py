@@ -1,29 +1,32 @@
 import pytest
-from intentir.ir import Program, Instruction, Opcode
-from intentir.verifier import Verifier, VerificationError
 
-def test_verifier_pass():
-    prog = Program([
-        Instruction(Opcode.DECLARE_AGENT, ["bot"]),
-        Instruction(Opcode.HALT)
-    ])
-    verifier = Verifier()
-    assert verifier.verify(prog) is True
+from intentir.binary import Instruction, Opcode, Operand, Program
+from intentir.intentasm_parser import parse_intentasm
+from intentir.verifier import VerificationError, Verifier
 
-def test_verifier_no_agent():
-    prog = Program([
-        Instruction(Opcode.LOG, ["hello"]),
-        Instruction(Opcode.HALT)
-    ])
-    verifier = Verifier()
-    with pytest.raises(VerificationError, match="must start with DECLARE_AGENT"):
-        verifier.verify(prog)
 
-def test_verifier_no_halt():
-    prog = Program([
-        Instruction(Opcode.DECLARE_AGENT, ["bot"]),
-        Instruction(Opcode.LOG, ["hello"])
-    ])
-    verifier = Verifier()
-    with pytest.raises(VerificationError, match="must end with HALT"):
-        verifier.verify(prog)
+def test_verifier_accepts_valid_program():
+    program = parse_intentasm(
+        """
+        AGENT name="planner"
+        TASK id="hello" summary="Say hello"
+        SEND to="worker"
+        CALL tool="agent.echo" mode="sync"
+        HALT
+        """
+    )
+
+    assert Verifier().verify(program) is True
+
+
+def test_verifier_rejects_call_without_task_or_send():
+    program = Program(
+        instructions=[
+            Instruction(Opcode.AGENT, [Operand("name", "planner")]),
+            Instruction(Opcode.CALL, [Operand("tool", "repo.scan")]),
+            Instruction(Opcode.HALT, []),
+        ]
+    )
+
+    with pytest.raises(VerificationError, match="CALL requires prior TASK and SEND"):
+        Verifier().verify(program)

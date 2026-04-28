@@ -1,0 +1,42 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "repo-scan",
+    "summary": "Scan repository layout and identify build entrypoints",
+    "kind": "analysis",
+    "priority": "normal"
+  },
+  "budget": {
+    "tokens": 1200,
+    "memory_mb": 256,
+    "wall_ms": 1500
+  },
+  "payloads": {
+    "scan_request": {
+      "root": "src",
+      "depth": "shallow",
+      "include": ["pyproject.toml", "README.md", "src"]
+    }
+  },
+  "call": {
+    "tool": "repo.scan",
+    "payload": "scan_request",
+    "mode": "sync"
+  },
+  "asserts": [
+    "receiver_has_repo_access",
+    "payload_scan_request_present"
+  ],
+  "trace": {
+    "name": "repo_scan_trace",
+    "sample": "full"
+  },
+  "commit": {
+    "status": "delegated",
+    "artifact": "repo_scan.report"
+  },
+  "release": [
+    "scan_slot"
+  ]
+}

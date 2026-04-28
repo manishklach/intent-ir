@@ -1,7 +1,7 @@
 [project]
 name = "intentir"
 version = "0.1.0"
-description = "Deterministic, inspectable intermediate representation for AI agents."
+description = "Assembly-style communication layer for AI agents."
 authors = [
     {name = "INTENT-IR Contributors"}
 ]
@@ -14,3 +14,6 @@ intentir = "intentir.cli:main"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

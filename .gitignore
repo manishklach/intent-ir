@@ -1,8 +1,7 @@
 build/
+build/*.intentbin
+build/*.intentasm
+traces/*.intenttrace.jsonl
 __pycache__/
 *.pyc
 .pytest_cache/
-*.bin
-*.ir
-out.ir
-out.bin

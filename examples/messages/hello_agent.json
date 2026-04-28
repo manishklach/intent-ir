@@ -1,0 +1,18 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "hello-agent",
+    "summary": "Send a minimal greeting packet",
+    "kind": "demo",
+    "priority": "low"
+  },
+  "call": {
+    "tool": "agent.echo",
+    "mode": "sync"
+  },
+  "trace": "hello_trace",
+  "commit": {
+    "status": "queued"
+  }
+}

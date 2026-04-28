@@ -1,103 +1,132 @@
 # INTENT-IR
-**A Deterministic Execution Substrate for AI Agents.**
 
-Modern AI agents typically operate by emitting unstructured text or calling opaque APIs, making their actions difficult to audit, verify, or replay. **INTENT-IR** introduces a research-level intermediate representation (IR) and runtime that treats agent actions as first-class instructions. By lowering agentic intent to a structured ISA, we enable static safety checks, deterministic execution, and high-fidelity trace/replay functionality—bringing the rigor of systems engineering to agentic workflows.
+Assembly-style communication layer for AI agents -- compile messages into verifiable, replayable instruction packets.
 
----
+INTENT-IR is a research prototype for agent-to-agent communication. The repository treats an agent message as a compact instruction packet that can be compiled, assembled, verified, executed by a receiver runtime, and replayed from trace. The goal is not to replace every text exchange between agents. The goal is to make high-value handoffs inspectable, bounded, and reproducible.
 
-## Why this exists
+## Why assembly-style packets
 
-### The Problem: Abstraction Leakage & Opacity
-Current agentic workflows suffer from a lack of formal boundaries. When an agent calls a tool, the reasoning logic and the execution side-effects are tightly coupled. This makes it impossible to:
-1. **Verify safety** before execution (e.g., will this agent exceed its token budget?).
-2. **Reproduce failures** exactly (LLM outputs are non-deterministic).
-3. **Inspect intent** without parsing ambiguous logs.
+Most agent systems still communicate through natural language transcripts or opaque tool invocations. That is flexible, but it also leaves important questions unanswered:
 
-### The Solution: Structured Execution
-INTENT-IR provides a formal instruction set for the reasoning engine. Instead of "doing" things, the agent "emits" intent. This intent is:
-- **Compiled**: Lowered from high-level goals to discrete instructions.
-- **Verified**: Checked against resource bounds and safety constraints (WASM/eBPF model).
-- **Traced**: Every state transition is recorded for bit-perfect replay.
+- What exactly did the sender ask the receiver to do?
+- Which payload was referenced by the tool call?
+- Was the packet structurally valid before execution?
+- Can the same receiver behavior be replayed later?
 
----
+INTENT-IR answers those questions with a small instruction set and a binary packet format designed for verification and auditability.
 
-## Opaque APIs vs. INTENT-IR
+## Status
 
-| Dimension | Opaque APIs / Tool-Calling | INTENT-IR |
-| :--- | :--- | :--- |
-| **Inspectability** | Black-box (logs only) | White-box (instruction-level) |
-| **Determinism** | Non-deterministic / Flaky | Bit-perfect replay |
-| **Replayability** | Manual / Scripted | Native, trace-first model |
-| **Validation** | Runtime errors | Static verification (eBPF-style) |
-| **Composability** | High-level / Brittle | Low-level / Orthogonal ISA |
-| **Debugging** | Log-parsing | Instruction-stepping |
+INTENT-IR is a research-prototype assembly pipeline. The ISA, binary format, and verifier rules are intentionally small and explicit so they can be inspected, debated, and extended. This repository is not presented as production-ready agent middleware.
 
----
+## The Assembly Path
+
+```text
+Agent Message JSON
+  ↓ compile-message
+IntentASM
+  ↓ asm
+IntentBin
+  ↓ recv/disasm/verify
+Verified Receiver Execution
+  ↓ trace
+Replayable Trace
+```
+
+The sender-side flow turns a JSON message into human-readable IntentASM, then into a compact `IntentBin` packet. The receiver can disassemble the packet for inspection, verify it before execution, and record a replayable trace when it runs the packet.
+
+## Repository layout
+
+```text
+spec/                Language, opcode, schema, and binary format docs
+src/intentir/        Parser, assembler, verifier, runtime, trace, and CLI
+examples/messages/   Example agent messages in JSON
+examples/asm/        Example IntentASM programs
+tests/               Parser, roundtrip, verifier, runtime, and replay tests
+traces/              Example output location for execution traces
+```
 
 ## Quickstart
 
-### Installation
+Install the package in editable mode:
+
 ```bash
-make install
+pip install -e .
 ```
 
-### Running a Demo
+Compile a message into IntentASM:
+
+```bash
+intentir compile-message examples/messages/repo_scan.json -o build/repo_scan.intentasm
+```
+
+Assemble the IntentASM program into IntentBin:
+
+```bash
+intentir asm build/repo_scan.intentasm -o build/repo_scan.intentbin
+```
+
+Disassemble the binary packet back into IntentASM:
+
+```bash
+intentir disasm build/repo_scan.intentbin -o build/repo_scan.disasm.intentasm
+```
+
+Verify the assembly program:
+
+```bash
+intentir verify build/repo_scan.intentasm
+```
+
+Execute the packet on a receiver runtime and record a trace:
+
+```bash
+intentir recv build/repo_scan.intentbin --agent worker --execute --trace traces/repo_scan.intenttrace.jsonl
+```
+
+Replay the recorded trace:
+
+```bash
+intentir replay traces/repo_scan.intenttrace.jsonl
+```
+
+## Demo
+
+Run the full sender-to-receiver flow:
+
 ```bash
 make demo
 ```
 
-### Manual Usage
-```bash
-# Compile Agent IR (JSON) to INTENT-IR
-intentir compile examples/repo_scan/task.json -o build/repo_scan.ir
+The demo prints:
 
-# Assemble to Binary
-intentir asm build/repo_scan.ir -o build/repo_scan.bin
+1. compiled assembly
+2. binary packet path
+3. disassembly
+4. verification passed
+5. receiver executed CALL
+6. trace written
+7. replay succeeded
 
-# Run with Tracing
-intentir run build/repo_scan.ir --trace traces/repo_scan.trace.jsonl
+## Example packet
 
-# Replay Trace
-intentir replay traces/repo_scan.trace.jsonl
-```
+The `examples/messages/repo_scan.json` message compiles to an assembly packet in `examples/asm/repo_scan.intentasm` with explicit sender, task, budget, payload, send, call, trace, commit, and halt instructions. The binary encoding preserves those instructions with opcode records and a payload table, while the verifier enforces basic structural rules before execution.
 
----
+## Design constraints
 
-## Instruction Set Architecture (ISA)
+- Compact instruction packets over free-form execution requests
+- Verifiable sender intent before receiver execution
+- Stable roundtrip from `.intentasm` to `.intentbin` and back
+- Replay-first runtime traces for postmortem analysis
+- Minimal claims: verification and replayability are in scope; production-hardening is not
 
-INTENT-IR instructions are designed for the "Agent-Native" era:
+## Specification entry points
 
-- `DECLARE_AGENT`: Identity and capability declaration.
-- `ALLOC_BUDGET`: Token and compute resource allocation.
-- `CALL_TOOL`: Structured interface for external interaction.
-- `ASSERT`: Verifiable state checks within the execution flow.
-- `COMMIT`: Immutable recording of agent outputs.
-
----
-
-## Architecture Pipeline
-
-![Architecture](diagrams/architecture.svg)
-
-1. **LLM** emits Agent IR (JSON).
-2. **Compiler** lowers JSON to INTENT-IR instructions.
-3. **Verifier** ensures the IR is safe and budgeted.
-4. **Runtime** executes instructions and generates a `.trace` file.
-5. **Human Auditor** inspects the trace via `intentir replay`.
-
----
-
-## Comparison vs API-calling Agents
-
-| Feature | API Agents | INTENT-IR Agents |
-|---------|------------|------------------|
-| Intent | Opaque Text | Structured IR |
-| Verification | Post-hoc | Pre-execution |
-| Replay | Impossible/Flaky | Deterministic |
-| Budgeting | Soft-limits | Hard-enforcement |
-| Inspectability | Log-based | Instruction-level |
-
----
+- [spec/intentasm-v0.1.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/intentasm-v0.1.md)
+- [spec/opcodes.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/opcodes.md)
+- [spec/binary-format.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/binary-format.md)
+- [spec/message-schema.json](/C:/Users/ManishKL/Documents/Playground/intent-ir/spec/message-schema.json)
 
 ## License
+
 MIT

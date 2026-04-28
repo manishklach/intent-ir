@@ -1,0 +1,37 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "memory-budget",
+    "summary": "Execute a bounded retrieval task under a fixed memory ceiling",
+    "kind": "resource-bound",
+    "priority": "high"
+  },
+  "budget": {
+    "tokens": 800,
+    "memory_mb": 128,
+    "wall_ms": 900
+  },
+  "payloads": {
+    "retrieval_request": {
+      "index": "docs",
+      "query": "binary packet checksum",
+      "top_k": 5
+    }
+  },
+  "call": {
+    "tool": "memory.query",
+    "payload": "retrieval_request",
+    "mode": "sync"
+  },
+  "asserts": [
+    "memory_mb<=128"
+  ],
+  "trace": "memory_budget_trace",
+  "commit": {
+    "status": "bounded"
+  },
+  "release": [
+    "retrieval_token"
+  ]
+}

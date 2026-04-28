@@ -1,0 +1,11 @@
+AGENT name="planner"
+TASK id="memory-budget" summary="Execute a bounded retrieval task under a fixed memory ceiling" kind="resource-bound" priority="high"
+BUDGET tokens=800 memory_mb=128 wall_ms=900
+PAYLOAD name="retrieval_request" format="json" value={"index":"docs","query":"binary packet checksum","top_k":5}
+SEND to="worker"
+CALL tool="memory.query" payload=@retrieval_request mode="sync"
+ASSERT condition="memory_mb<=128"
+TRACE name="memory_budget_trace"
+COMMIT status="bounded"
+RELEASE resource="retrieval_token"
+HALT

@@ -1,0 +1,7 @@
+AGENT name="planner"
+TASK id="hello-agent" summary="Send a minimal greeting packet" kind="demo" priority="low"
+SEND to="worker"
+CALL tool="agent.echo" mode="sync"
+TRACE name="hello_trace"
+COMMIT status="queued"
+HALT

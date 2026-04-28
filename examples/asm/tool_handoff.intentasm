@@ -1,0 +1,8 @@
+AGENT name="planner"
+TASK id="tool-handoff" summary="Pass a structured tool request to a worker agent" kind="handoff" priority="normal"
+PAYLOAD name="tool_request" format="json" value={"args":["tests/test_cli.py"],"command":"pytest","cwd":"repo"}
+SEND to="worker"
+CALL tool="tool.exec" payload=@tool_request mode="async"
+TRACE name="tool_handoff_trace"
+COMMIT status="handed_off"
+HALT

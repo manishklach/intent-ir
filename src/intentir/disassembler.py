@@ -1,18 +1,41 @@
+from __future__ import annotations
+
 import json
-from .ir import Program
-from .packets import decode_program
+from pathlib import Path
 
-def disassemble(data: bytes) -> str:
-    program = decode_program(data)
-    lines = []
-    for inst in program.instructions:
-        args_str = ", ".join(json.dumps(arg) for arg in inst.operands)
-        lines.append(f"{inst.opcode.name:15} {args_str}")
-    return "\n".join(lines)
+from .binary import PayloadRef, Program, decode_program
 
-def program_to_asm(program: Program) -> str:
-    lines = []
-    for inst in program.instructions:
-        args_str = ", ".join(json.dumps(arg) for arg in inst.operands)
-        lines.append(f"{inst.opcode.name:15} {args_str}")
-    return "\n".join(lines)
+
+def _render_value(value) -> str:
+    if isinstance(value, PayloadRef):
+        return f"@{value.name}"
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, separators=(",", ":"), sort_keys=True)
+    if isinstance(value, str):
+        return json.dumps(value)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "null"
+    return str(value)
+
+
+def render_intentasm(program: Program) -> str:
+    lines: list[str] = []
+    for instruction in program.instructions:
+        if instruction.operands:
+            operand_text = " ".join(
+                f"{operand.key}={_render_value(operand.value)}" for operand in instruction.operands
+            )
+            lines.append(f"{instruction.opcode.name} {operand_text}")
+        else:
+            lines.append(instruction.opcode.name)
+    return "\n".join(lines) + "\n"
+
+
+def disassemble_binary(data: bytes) -> str:
+    return render_intentasm(decode_program(data))
+
+
+def disassemble_file(path: str | Path) -> str:
+    return disassemble_binary(Path(path).read_bytes())

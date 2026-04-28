@@ -1,41 +1,49 @@
+from __future__ import annotations
+
 import json
 import time
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any
 
-@dataclass
-class TraceEntry:
-    timestamp: float
-    pc: int
-    opcode: str
-    args: List[Any]
-    state_delta: Dict[str, Any]
-    event: str = "exec"
+from .binary import PayloadRef
 
-class Tracer:
-    def __init__(self):
-        self.entries: List[TraceEntry] = []
 
-    def record(self, pc: int, opcode: str, args: List[Any], delta: Dict[str, Any]):
-        self.entries.append(TraceEntry(
-            timestamp=time.time(),
-            pc=pc,
-            opcode=opcode,
-            args=args,
-            state_delta=delta
-        ))
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, PayloadRef):
+        return {"payload_ref": value.name}
+    if isinstance(value, list):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _jsonable(val) for key, val in value.items()}
+    return value
 
-    def save(self, path: str):
-        with open(path, 'w') as f:
-            for entry in self.entries:
-                f.write(json.dumps(asdict(entry)) + '\n')
 
-class Replayer:
-    def replay(self, trace_path: str):
-        print(f"[*] Replaying trace: {trace_path}")
-        with open(trace_path, 'r') as f:
-            for line in f:
-                entry = json.loads(line)
-                print(f"[{entry['timestamp']:.4f}] PC={entry['pc']} OP={entry['opcode']} ARGS={entry['args']}")
-                if entry['state_delta']:
-                    print(f"    Delta: {entry['state_delta']}")
+class TraceWriter:
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.handle = self.path.open("w", encoding="utf-8")
+
+    def record(self, event: dict[str, Any]) -> None:
+        payload = dict(event)
+        payload.setdefault("timestamp", time.time())
+        self.handle.write(json.dumps(_jsonable(payload), sort_keys=True) + "\n")
+        self.handle.flush()
+
+    def close(self) -> None:
+        if not self.handle.closed:
+            self.handle.close()
+
+
+def replay_trace(path: str | Path) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    with Path(path).open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            entries.append(entry)
+            message = entry.get("message") or entry.get("opcode")
+            print(f"[replay] pc={entry.get('pc')} event={entry.get('event')} message={message}")
+    print(f"[replay] succeeded with {len(entries)} events")
+    return entries

@@ -1,0 +1,26 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "tool-handoff",
+    "summary": "Pass a structured tool request to a worker agent",
+    "kind": "handoff",
+    "priority": "normal"
+  },
+  "payloads": {
+    "tool_request": {
+      "command": "pytest",
+      "cwd": "repo",
+      "args": ["tests/test_cli.py"]
+    }
+  },
+  "call": {
+    "tool": "tool.exec",
+    "payload": "tool_request",
+    "mode": "async"
+  },
+  "trace": "tool_handoff_trace",
+  "commit": {
+    "status": "handed_off"
+  }
+}
