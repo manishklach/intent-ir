@@ -1,0 +1,7 @@
+{"timestamp": 1777382960.0878003, "pc": 0, "opcode": "DECLARE_AGENT", "args": ["scanner-v1"], "state_delta": {"agent": "scanner-v1"}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 1, "opcode": "DECLARE_TASK", "args": ["scan_repo"], "state_delta": {"task": "scan_repo"}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 2, "opcode": "REQUEST_RESOURCE", "args": ["."], "state_delta": {"resources": ["."]}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 3, "opcode": "CALL_TOOL", "args": ["ls", ["-R"]], "state_delta": {"tool_call": {"name": "ls", "result": "ok"}}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 4, "opcode": "LOG", "args": ["Scanning complete"], "state_delta": {}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 5, "opcode": "COMMIT", "args": [{"files_found": 12}], "state_delta": {"committed": {"files_found": 12}}, "event": "exec"}
+{"timestamp": 1777382960.0878003, "pc": 6, "opcode": "HALT", "args": [], "state_delta": {"status": "halted"}, "event": "exec"}

@@ -1,0 +1,10 @@
+{
+  "agent_id": "dispatcher",
+  "workflow": [
+    { "type": "init", "name": "handoff_flow" },
+    { "type": "log", "message": "Primary agent task complete" },
+    { "type": "send", "to": "specialist-agent", "message": "Start phase 2" },
+    { "type": "wait", "condition": "phase_2_complete" },
+    { "type": "log", "message": "Handoff workflow finished" }
+  ]
+}

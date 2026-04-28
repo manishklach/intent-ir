@@ -1,0 +1,8 @@
+build/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.bin
+*.ir
+out.ir
+out.bin

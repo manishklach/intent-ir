@@ -1,0 +1,5 @@
+{"timestamp": 1777382914.52193, "pc": 0, "opcode": "DECLARE_AGENT", "args": ["hello-bot"], "state_delta": {"agent": "hello-bot"}, "event": "exec"}
+{"timestamp": 1777382914.52193, "pc": 1, "opcode": "DECLARE_TASK", "args": ["greet"], "state_delta": {"task": "greet"}, "event": "exec"}
+{"timestamp": 1777382914.52193, "pc": 2, "opcode": "LOG", "args": ["Hello, INTENT-IR!"], "state_delta": {}, "event": "exec"}
+{"timestamp": 1777382914.52193, "pc": 3, "opcode": "COMMIT", "args": [{"greeting": "Hello World"}], "state_delta": {"committed": {"greeting": "Hello World"}}, "event": "exec"}
+{"timestamp": 1777382914.52193, "pc": 4, "opcode": "HALT", "args": [], "state_delta": {"status": "halted"}, "event": "exec"}

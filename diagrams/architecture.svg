@@ -1,0 +1,37 @@
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="580" height="380" rx="10" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  
+  <rect x="50" y="50" width="120" height="60" rx="5" fill="#e7f5ff" stroke="#228be6" stroke-width="2"/>
+  <text x="110" y="85" text-anchor="middle" font-family="Arial" font-size="14" fill="#1864ab">Agent IR (JSON)</text>
+  
+  <path d="M 170 80 L 220 80" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="230" y="50" width="120" height="60" rx="5" fill="#f3f0ff" stroke="#7950f2" stroke-width="2"/>
+  <text x="290" y="85" text-anchor="middle" font-family="Arial" font-size="14" fill="#5f3dc4">Compiler</text>
+  
+  <path d="M 350 80 L 400 80" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="410" y="50" width="120" height="60" rx="5" fill="#fff4e6" stroke="#fd7e14" stroke-width="2"/>
+  <text x="470" y="85" text-anchor="middle" font-family="Arial" font-size="14" fill="#d9480f">INTENT-IR</text>
+  
+  <path d="M 470 110 L 470 160" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="410" y="170" width="120" height="60" rx="5" fill="#e6fcf5" stroke="#0ca678" stroke-width="2"/>
+  <text x="470" y="205" text-anchor="middle" font-family="Arial" font-size="14" fill="#087f5b">Verifier</text>
+  
+  <path d="M 410 200 L 360 200" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="230" y="170" width="120" height="60" rx="5" fill="#fff9db" stroke="#f08c00" stroke-width="2"/>
+  <text x="290" y="205" text-anchor="middle" font-family="Arial" font-size="14" fill="#e67700">Runtime</text>
+  
+  <path d="M 230 200 L 180 200" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <rect x="50" y="170" width="120" height="60" rx="5" fill="#f1f3f5" stroke="#495057" stroke-width="2"/>
+  <text x="110" y="205" text-anchor="middle" font-family="Arial" font-size="14" fill="#212529">Trace Output</text>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#495057" />
+    </marker>
+  </defs>
+</svg>

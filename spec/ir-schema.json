@@ -1,0 +1,12 @@
+{
+    "title":  "INTENT-IR Program",
+    "properties":  {
+                       "version":  {
+                                       "type":  "string"
+                                   },
+                       "instructions":  {
+                                            "type":  "array"
+                                        }
+                   },
+    "type":  "object"
+}

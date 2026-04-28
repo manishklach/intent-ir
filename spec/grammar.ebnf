@@ -1,0 +1,10 @@
+program     = { instruction } ;
+instruction = opcode [ operands ] ;
+opcode      = "DECLARE_AGENT" | "DECLARE_TASK" | "ALLOC_BUDGET" | "CALL_TOOL" | "HALT" | ... ;
+operands    = operand { "," operand } ;
+operand     = string | number | list | object ;
+string      = '"' { character } '"' ;
+number      = [ "-" ] digit { digit } ;
+list        = "[" [ operand { "," operand } ] "]" ;
+object      = "{" [ pair { "," pair } ] "}" ;
+pair        = string ":" operand ;

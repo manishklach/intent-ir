@@ -1,0 +1,28 @@
+<svg width="500" height="300" viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="150" r="40" fill="#f1f3f5" stroke="#495057" stroke-width="2"/>
+  <text x="100" y="155" text-anchor="middle" font-family="Arial" font-size="12">READY</text>
+  
+  <path d="M 140 150 L 210 150" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="175" y="140" text-anchor="middle" font-family="Arial" font-size="10">INIT</text>
+  
+  <circle cx="250" cy="150" r="40" fill="#fff9db" stroke="#f08c00" stroke-width="2"/>
+  <text x="250" y="155" text-anchor="middle" font-family="Arial" font-size="12">RUNNING</text>
+  
+  <path d="M 290 150 L 360 150" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="325" y="140" text-anchor="middle" font-family="Arial" font-size="10">HALT</text>
+  
+  <circle cx="400" cy="150" r="40" fill="#e6fcf5" stroke="#0ca678" stroke-width="2"/>
+  <text x="400" y="155" text-anchor="middle" font-family="Arial" font-size="12">HALTED</text>
+  
+  <path d="M 250 110 L 250 60 L 360 60" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="305" y="50" text-anchor="middle" font-family="Arial" font-size="10">FAIL</text>
+  
+  <circle cx="400" cy="60" r="30" fill="#fff5f5" stroke="#fa5252" stroke-width="2"/>
+  <text x="400" y="65" text-anchor="middle" font-family="Arial" font-size="10">FAILED</text>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#495057" />
+    </marker>
+  </defs>
+</svg>

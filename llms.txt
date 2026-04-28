@@ -1,0 +1,21 @@
+INTENT-IR: Deterministic Execution Substrate for AI Agents
+
+Core Idea:
+Instead of agents emitting text, they emit INTENT-IR.
+Structured, compiled, verified, and replayable.
+
+Architecture:
+- High-level Agent IR (JSON)
+- Lower-level INTENT-IR instructions
+- Compiler (Agent IR -> INTENT-IR)
+- Assembler (IR -> Binary)
+- Runtime (Interpreter + Tracer)
+
+CLI:
+- intentir compile
+- intentir asm
+- intentir run
+- intentir replay
+
+Key Message:
+Standardize agent execution via IR to enable safety and observability.

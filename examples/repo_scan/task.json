@@ -1,0 +1,13 @@
+{
+  "agent_id": "scanner-v1",
+  "metadata": {
+    "purpose": "Inventory source files"
+  },
+  "workflow": [
+    { "type": "init", "name": "scan_repo" },
+    { "type": "resource", "path": "." },
+    { "type": "tool", "name": "ls", "args": ["-R"] },
+    { "type": "log", "message": "Scanning complete" },
+    { "type": "commit", "data": { "files_found": 12 } }
+  ]
+}

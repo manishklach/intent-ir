@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INTENT-IR | Agent Execution Substrate</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">INTENT-IR</div>
+            <div class="links">
+                <a href="#about">About</a>
+                <a href="#spec">Spec</a>
+                <a href="https://github.com/ManishKL/intent-ir">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>The Deterministic Substrate for <span class="gradient-text">AI Agents</span></h1>
+            <p>Moving from opaque text to verifiable intent. A complete IR layer for the next generation of agentic workflows.</p>
+            <div class="cta">
+                <a href="https://github.com/ManishKL/intent-ir" class="btn primary">View on GitHub</a>
+                <code class="install-cmd">pip install intentir</code>
+            </div>
+        </section>
+
+        <section id="about" class="features">
+            <div class="feature-card">
+                <h3>Deterministic</h3>
+                <p>Every execution is recorded in a bit-perfect trace, allowing for complete replayability and auditing.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Verifiable</h3>
+                <p>A static verifier ensures resource bounds and safety constraints are met before a single instruction runs.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Inspectable</h3>
+                <p>Low-level IR instructions provide a clear view of agent intent, removing the "black box" problem of LLMs.</p>
+            </div>
+        </section>
+
+        <section class="code-preview">
+            <div class="window">
+                <div class="title-bar">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                    <span class="title">hello_agent.asm</span>
+                </div>
+                <pre><code>DECLARE_AGENT   "hello-bot"
+DECLARE_TASK    "greet"
+LOG             "Hello, INTENT-IR!"
+COMMIT          {"greeting": "Hello World"}
+HALT</code></pre>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 INTENT-IR Project. Built for the Agentic Future.</p>
+    </footer>
+</body>
+</html>
