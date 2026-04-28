@@ -4,7 +4,16 @@ Assembly-style communication layer for AI agents — compile messages into verif
 
 INTENT-IR is an assembly-style communication layer for AI agents.
 
-Agents should be able to send small verifiable instruction packets to other agents. The receiver can disassemble, verify, execute, trace, and replay exactly what happened.
+Agents shouldn’t blindly execute requests. INTENT-IR lets them disassemble, verify, reject, execute, trace, and replay agent packets.
+
+```bash
+make demo-safety
+```
+
+Research prototype:
+- local and deterministic
+- policy-enforced before execution
+- designed to be understandable from terminal output
 
 INTENT-IR is a research prototype for agent-to-agent communication. The repository treats an agent message as a compact instruction packet that can be compiled, assembled, verified, executed by a receiver runtime, and replayed from trace. The goal is not to replace every text exchange between agents. The goal is to make high-value handoffs inspectable, bounded, and reproducible.
 
@@ -18,10 +27,6 @@ Most agent systems still communicate through natural language transcripts or opa
 - Can the same receiver behavior be replayed later?
 
 INTENT-IR answers those questions with a small instruction set and a binary packet format designed for verification and auditability.
-
-## Status
-
-INTENT-IR is a research-prototype assembly pipeline. The ISA, binary format, and verifier rules are intentionally small and explicit so they can be inspected, debated, and extended. This repository is not presented as production-ready agent middleware.
 
 ## The Assembly Path
 
@@ -111,6 +116,12 @@ Expected output:
 [trace] wrote traces/unsafe_budget.intenttrace.jsonl
 ```
 
+The canonical transcript is in [docs/demo-transcript.md](/C:/Users/ManishKL/Documents/Playground/intent-ir/docs/demo-transcript.md).
+
+## Status
+
+INTENT-IR is a research prototype. The ISA, binary format, verifier rules, and policy files are intentionally small and explicit so they can be inspected, debated, and extended. This repository is not presented as production-ready agent middleware.
+
 ## Repository layout
 
 ```text
@@ -140,6 +151,8 @@ intentir verify build/repo_scan.intentasm --agent worker --policy policies/worke
 intentir recv build/repo_scan.intentbin --agent worker --policy policies/worker.policy.json --execute --trace traces/repo_scan.intenttrace.jsonl
 intentir replay traces/repo_scan.intenttrace.jsonl
 ```
+
+If you are on WSL or Linux, `python3` is the default interpreter used by the Makefile.
 
 ## Demo
 

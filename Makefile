@@ -37,8 +37,8 @@ demo-safety:
 	$(PKG) asm build/safe_repo_scan.intentasm -o build/safe_repo_scan.intentbin
 	@echo "3. recv/execute safe packet"
 	$(PKG) recv build/safe_repo_scan.intentbin --agent worker --policy policies/worker.policy.json --execute --trace traces/safe_repo_scan.intenttrace.jsonl
-	@echo "SAFE: ✔ allowed by policy"
-	@echo "SAFE: ✔ executed"
+	@echo "SAFE: allowed by policy"
+	@echo "SAFE: executed"
 	@echo "4. replay safe trace"
 	$(PKG) replay traces/safe_repo_scan.intenttrace.jsonl
 	@echo "5. compile unsafe shell message"
@@ -47,7 +47,7 @@ demo-safety:
 	$(PKG) asm build/unsafe_shell.intentasm -o build/unsafe_shell.intentbin
 	@echo "7. recv unsafe shell packet"
 	$(PKG) recv build/unsafe_shell.intentbin --agent worker --policy policies/worker.policy.json --execute --trace traces/unsafe_shell.intenttrace.jsonl
-	@echo "UNSAFE SHELL: ❌ rejected by policy"
+	@echo "UNSAFE SHELL: rejected by policy"
 	@echo "8. show shell verifier rejection"
 	$(call PRINT_REJECTIONS,traces/unsafe_shell.intenttrace.jsonl)
 	@echo "9. replay unsafe shell trace"
@@ -58,12 +58,12 @@ demo-safety:
 	$(PKG) asm build/unsafe_budget.intentasm -o build/unsafe_budget.intentbin
 	@echo "12. recv unsafe budget packet"
 	$(PKG) recv build/unsafe_budget.intentbin --agent worker --policy policies/worker.policy.json --execute --trace traces/unsafe_budget.intenttrace.jsonl
-	@echo "UNSAFE BUDGET: ❌ rejected by policy"
+	@echo "UNSAFE BUDGET: rejected by policy"
 	@echo "13. replay unsafe budget trace"
 	$(PKG) replay traces/unsafe_budget.intenttrace.jsonl
 
 test:
-	PYTHONPATH=src pytest tests
+	PYTHONPATH=src $(PYTHON) -m pytest tests
 
 clean:
 	$(PYTHON) -c "from pathlib import Path; import shutil; shutil.rmtree('build', ignore_errors=True); [p.unlink() for p in Path('traces').glob('*.intenttrace.jsonl') if p.is_file()]"

@@ -124,4 +124,6 @@ if __name__ == "__main__":
     try:
         main()
     except VerificationError as exc:
-        raise SystemExit(f"verification failed: {exc}")
+        print("[verify] failed")
+        print(f"[reject] {exc}")
+        raise SystemExit(1)
