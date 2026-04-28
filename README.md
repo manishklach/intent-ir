@@ -39,6 +39,37 @@ Replayable Trace
 
 The sender-side flow turns a JSON message into human-readable IntentASM, then into a compact `IntentBin` packet. The receiver can disassemble the packet for inspection, verify it before execution, and record a replayable trace when it runs the packet.
 
+## Killer Demo: Verifiable Agent Packets
+
+Run:
+
+```bash
+make demo-safety
+```
+
+This demo shows a planner agent sending two packets to a worker agent:
+
+- `safe_repo_scan` passes verification, executes `CALL repo.scan`, commits `repo_scan.report`, and writes a trace.
+- `unsafe_shell` is rejected deterministically because `shell.exec` is not allowed for `worker`, is not executed, and writes a rejection trace.
+
+Expected output:
+
+```text
+[recv] agent=worker packet=safe_repo_scan.intentbin
+[disasm] decoded 11 instructions
+[verify] passed
+[execute] CALL repo.scan
+[commit] repo_scan.report
+[trace] wrote traces/safe_repo_scan.intenttrace.jsonl
+
+[recv] agent=worker packet=unsafe_shell.intentbin
+[disasm] decoded 8 instructions
+[verify] failed
+[reject] tool "shell.exec" is not allowed for agent "worker"
+[execute] skipped
+[trace] wrote traces/unsafe_shell.intenttrace.jsonl
+```
+
 ## Repository layout
 
 ```text

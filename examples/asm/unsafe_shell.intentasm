@@ -1,0 +1,8 @@
+AGENT name="planner"
+TASK id="unsafe-shell" summary="Attempt to run an unsafe shell command on the worker" kind="forbidden" priority="high"
+BUDGET tokens=200 memory_mb=64 wall_ms=500
+PAYLOAD name="shell_request" format="json" value={"command":"rm -rf /tmp/demo","cwd":"."}
+SEND to="worker"
+CALL tool="shell.exec" payload=@shell_request mode="sync"
+TRACE name="unsafe_shell_trace"
+HALT

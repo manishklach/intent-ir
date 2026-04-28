@@ -76,14 +76,22 @@ def main() -> None:
 
     if args.command == "recv":
         result = AgentRuntime(agent_name=args.agent, execute=args.execute, trace_path=args.trace).recv_binary(args.input)
-        if result.get("delivered") and args.execute:
-            print(f"[recv] executed packet for agent {args.agent}")
-        elif result.get("delivered"):
-            print(f"[recv] delivered packet for agent {args.agent}")
+        print(f"[recv] agent={args.agent} packet={Path(args.input).name}")
+        print(f"[disasm] decoded {result['instruction_count']} instructions")
+        if result.get("verified"):
+            print("[verify] passed")
         else:
-            print(f"[recv] skipped packet: {result['message']}")
+            print("[verify] failed")
+            print(f"[reject] {result['error']}")
+        if result.get("executed"):
+            for tool_name in result.get("executed_tools", []):
+                print(f"[execute] CALL {tool_name}")
+            for artifact in result.get("committed_artifacts", []):
+                print(f"[commit] {artifact}")
+        else:
+            print("[execute] skipped")
         if args.trace:
-            print(f"[recv] trace written to {args.trace}")
+            print(f"[trace] wrote {args.trace}")
         return
 
     if args.command == "replay":

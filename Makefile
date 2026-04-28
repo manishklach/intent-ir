@@ -1,14 +1,16 @@
-.PHONY: install demo test clean
+.PHONY: install demo demo-safety test clean
 
 PYTHON ?= python
 PKG := PYTHONPATH=src $(PYTHON) -m intentir.cli
 PRINT_FILE = $(PYTHON) -c "from pathlib import Path; print(Path(r'$(1)').read_text(encoding='utf-8'), end='')"
+PRINT_REJECTIONS = $(PYTHON) -c "import json; from pathlib import Path; [print('[reject-trace]', entry.get('message')) for entry in (json.loads(line) for line in Path(r'$(1)').read_text(encoding='utf-8').splitlines() if line.strip()) if entry.get('outcome') == 'reject']"
+ENSURE_DIRS = $(PYTHON) -c "from pathlib import Path; [Path(x).mkdir(parents=True, exist_ok=True) for x in ('build','traces')]"
 
 install:
 	$(PYTHON) -m pip install -e .
 
 demo:
-	mkdir -p build traces
+	$(ENSURE_DIRS)
 	@echo "1. compiled assembly"
 	$(PKG) compile-message examples/messages/repo_scan.json -o build/repo_scan.intentasm
 	$(call PRINT_FILE,build/repo_scan.intentasm)
@@ -26,6 +28,27 @@ demo:
 	@echo "traces/repo_scan.intenttrace.jsonl"
 	@echo "7. replay succeeded"
 	$(PKG) replay traces/repo_scan.intenttrace.jsonl
+
+demo-safety:
+	$(ENSURE_DIRS)
+	@echo "1. compile safe message"
+	$(PKG) compile-message examples/messages/safe_repo_scan.json -o build/safe_repo_scan.intentasm
+	@echo "2. assemble safe packet"
+	$(PKG) asm build/safe_repo_scan.intentasm -o build/safe_repo_scan.intentbin
+	@echo "3. recv/execute safe packet"
+	$(PKG) recv build/safe_repo_scan.intentbin --agent worker --execute --trace traces/safe_repo_scan.intenttrace.jsonl
+	@echo "4. replay safe trace"
+	$(PKG) replay traces/safe_repo_scan.intenttrace.jsonl
+	@echo "5. compile unsafe message"
+	$(PKG) compile-message examples/messages/unsafe_shell.json -o build/unsafe_shell.intentasm
+	@echo "6. assemble unsafe packet"
+	$(PKG) asm build/unsafe_shell.intentasm -o build/unsafe_shell.intentbin
+	@echo "7. recv unsafe packet"
+	$(PKG) recv build/unsafe_shell.intentbin --agent worker --execute --trace traces/unsafe_shell.intenttrace.jsonl
+	@echo "8. show verifier rejection"
+	$(call PRINT_REJECTIONS,traces/unsafe_shell.intenttrace.jsonl)
+	@echo "9. replay unsafe trace"
+	$(PKG) replay traces/unsafe_shell.intenttrace.jsonl
 
 test:
 	PYTHONPATH=src pytest tests

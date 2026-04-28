@@ -12,10 +12,9 @@ def test_receiver_executes_valid_packet(tmp_path, capsys):
     runtime = AgentRuntime(agent_name="worker", execute=True, trace_path=trace_path)
     result = runtime.recv_binary(binary_path)
 
-    captured = capsys.readouterr()
     assert result["delivered"] is True
     assert result["executed"] is True
-    assert "receiver executed CALL repo.scan" in captured.out
+    assert result["executed_tools"] == ["repo.scan"]
     assert trace_path.exists()
 
 

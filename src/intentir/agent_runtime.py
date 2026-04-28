@@ -31,19 +31,62 @@ class AgentRuntime:
 
     def recv_binary(self, path: str | Path):
         try:
-            program = decode_program(Path(path).read_bytes())
+            packet_path = Path(path)
+            program = decode_program(packet_path.read_bytes())
+            self._record(None, None, f"received packet {packet_path.name}", {"instruction_count": len(program.instructions)})
             verifier = Verifier()
-            verifier.verify(program)
+            try:
+                verifier.verify(program, receiver_agent=self.agent_name)
+            except VerificationError as exc:
+                message = str(exc)
+                self.state["status"] = "rejected"
+                self._record(None, None, "verification failed", {"outcome": "reject", "reason": message})
+                self._record(None, None, f"rejected packet: {message}", {"outcome": "reject"})
+                return {
+                    "packet": packet_path.name,
+                    "instruction_count": len(program.instructions),
+                    "verified": False,
+                    "delivered": False,
+                    "executed": False,
+                    "rejected": True,
+                    "error": message,
+                }
+            self._record(None, None, "verification passed", {"outcome": "verify-pass"})
             if not should_deliver(program, self.agent_name):
                 message = f"packet not addressed to agent '{self.agent_name}'"
                 self._record(None, None, "drop", message)
-                return {"delivered": False, "message": message}
+                return {
+                    "packet": packet_path.name,
+                    "instruction_count": len(program.instructions),
+                    "verified": True,
+                    "delivered": False,
+                    "executed": False,
+                    "message": message,
+                }
             if not self.execute:
                 message = f"packet delivered to agent '{self.agent_name}'"
                 self._record(None, None, "deliver", message)
-                return {"delivered": True, "executed": False, "message": message}
+                return {
+                    "packet": packet_path.name,
+                    "instruction_count": len(program.instructions),
+                    "verified": True,
+                    "delivered": True,
+                    "executed": False,
+                    "message": message,
+                }
             result = self.execute_program(program)
-            return {"delivered": True, "executed": True, "state": result}
+            return {
+                "packet": packet_path.name,
+                "instruction_count": len(program.instructions),
+                "verified": True,
+                "delivered": True,
+                "executed": True,
+                "state": result,
+                "executed_tools": [call["tool"] for call in result["calls"]],
+                "committed_artifacts": [
+                    commit["artifact"] for commit in result["commits"] if isinstance(commit, dict) and "artifact" in commit
+                ],
+            }
         finally:
             self.close()
 
@@ -83,7 +126,6 @@ class AgentRuntime:
             call_record = {"tool": tool_name, "payload": payload_value}
             self.state["calls"].append(call_record)
             message = f"receiver executed CALL {tool_name}"
-            print(message)
             self._record(pc, opcode.name, message, {"call": call_record})
         elif opcode == Opcode.ASSERT:
             self._record(pc, opcode.name, f"recorded assertion {_operand(instruction, 'condition')}")

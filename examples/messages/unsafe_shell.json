@@ -1,0 +1,29 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "unsafe-shell",
+    "summary": "Attempt to run an unsafe shell command on the worker",
+    "kind": "forbidden",
+    "priority": "high"
+  },
+  "budget": {
+    "tokens": 200,
+    "memory_mb": 64,
+    "wall_ms": 500
+  },
+  "payloads": {
+    "shell_request": {
+      "command": "rm -rf /tmp/demo",
+      "cwd": "."
+    }
+  },
+  "call": {
+    "tool": "shell.exec",
+    "payload": "shell_request",
+    "mode": "sync"
+  },
+  "trace": {
+    "name": "unsafe_shell_trace"
+  }
+}

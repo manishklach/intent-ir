@@ -1,0 +1,43 @@
+{
+  "sender": "planner",
+  "recipient": "worker",
+  "task": {
+    "id": "safe-repo-scan",
+    "summary": "Scan repository layout and write a report artifact",
+    "kind": "analysis",
+    "priority": "normal"
+  },
+  "budget": {
+    "tokens": 1200,
+    "memory_mb": 256,
+    "wall_ms": 1500
+  },
+  "payloads": {
+    "scan_request": {
+      "root": ".",
+      "include": [
+        "*.md",
+        "*.py"
+      ]
+    }
+  },
+  "call": {
+    "tool": "repo.scan",
+    "payload": "scan_request",
+    "mode": "sync"
+  },
+  "asserts": [
+    "receiver_has_repo_access"
+  ],
+  "trace": {
+    "name": "safe_repo_scan_trace",
+    "sample": "full"
+  },
+  "commit": {
+    "status": "delegated",
+    "artifact": "repo_scan.report"
+  },
+  "release": [
+    "scan_slot"
+  ]
+}

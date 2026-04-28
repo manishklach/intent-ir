@@ -1,0 +1,11 @@
+AGENT name="planner"
+TASK id="safe-repo-scan" summary="Scan repository layout and write a report artifact" kind="analysis" priority="normal"
+BUDGET tokens=1200 memory_mb=256 wall_ms=1500
+PAYLOAD name="scan_request" format="json" value={"include":["*.md","*.py"],"root":"."}
+SEND to="worker"
+CALL tool="repo.scan" payload=@scan_request mode="sync"
+ASSERT condition="receiver_has_repo_access"
+TRACE name="safe_repo_scan_trace" sample="full"
+COMMIT status="delegated" artifact="repo_scan.report"
+RELEASE resource="scan_slot"
+HALT

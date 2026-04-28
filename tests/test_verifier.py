@@ -11,7 +11,7 @@ def test_verifier_accepts_valid_program():
         AGENT name="planner"
         TASK id="hello" summary="Say hello"
         SEND to="worker"
-        CALL tool="agent.echo" mode="sync"
+        CALL tool="repo.scan" mode="sync"
         HALT
         """
     )
